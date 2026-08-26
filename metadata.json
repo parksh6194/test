@@ -1,0 +1,6 @@
+{
+  "name": "오늘의 운세",
+  "description": "생년월일 맞춤 사주, 띠별·별자리 운세, 타로 카드, 포춘쿠키 및 AI 운세 상담을 제공하는 모바일 최적화 오늘의 운세 앱",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
