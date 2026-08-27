@@ -16,19 +16,42 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onSave,
 }) => {
   const [name, setName] = useState(profile.name);
-  const [birthDate, setBirthDate] = useState(profile.birthDate);
+
+  // Parse initial birth date parts (YYYY-MM-DD)
+  const initialDateParts = (profile.birthDate || "1996-05-15").split("-");
+  const [birthYear, setBirthYear] = useState(initialDateParts[0] || "1996");
+  const [birthMonth, setBirthMonth] = useState(initialDateParts[1] || "05");
+  const [birthDay, setBirthDay] = useState(initialDateParts[2] || "15");
+
   const [birthTime, setBirthTime] = useState(profile.birthTime);
   const [isTimeUnknown, setIsTimeUnknown] = useState(profile.birthTime === "unknown" || !profile.birthTime);
   const [calendarType, setCalendarType] = useState<CalendarType>(profile.calendarType);
   const [gender, setGender] = useState<Gender>(profile.gender);
 
+  const yearInputRef = React.useRef<HTMLInputElement>(null);
+  const monthInputRef = React.useRef<HTMLInputElement>(null);
+  const dayInputRef = React.useRef<HTMLInputElement>(null);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Format normalized YYYY-MM-DD
+    const rawY = parseInt(birthYear, 10);
+    const validYear = isNaN(rawY) || rawY < 1900 ? "1996" : String(rawY).padStart(4, "0");
+
+    const rawM = parseInt(birthMonth, 10);
+    const validMonth = isNaN(rawM) ? "01" : String(Math.min(12, Math.max(1, rawM))).padStart(2, "0");
+
+    const rawD = parseInt(birthDay, 10);
+    const validDay = isNaN(rawD) ? "01" : String(Math.min(31, Math.max(1, rawD))).padStart(2, "0");
+
+    const formattedBirthDate = `${validYear}-${validMonth}-${validDay}`;
+
     onSave({
       name: name.trim() || "행운이",
-      birthDate: birthDate || "1996-05-15",
+      birthDate: formattedBirthDate,
       birthTime: isTimeUnknown ? "unknown" : birthTime || "12:00",
       calendarType,
       gender,
@@ -132,20 +155,89 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
           </div>
 
-          {/* Birth Date */}
+          {/* Birth Date (Direct Year / Month / Day Input) */}
           <div>
-            <label className="block text-xs font-semibold text-amber-200/90 mb-1.5">
-              <Calendar className="inline w-3.5 h-3.5 mr-1 text-amber-400" />
-              생년월일
-            </label>
-            <input
-              id="profile-birthdate-input"
-              type="date"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              className="w-full bg-[#161625] border border-white/10 rounded-xl px-3.5 py-2.5 text-slate-100 focus:outline-none focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/30 text-sm transition-all"
-              required
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-amber-200/90 flex items-center">
+                <Calendar className="inline w-3.5 h-3.5 mr-1 text-amber-400" />
+                생년월일 (직접 입력)
+              </label>
+              <span className="text-[11px] text-slate-400">숫자로 직접 입력 (예: 1996 5 15)</span>
+            </div>
+
+            <div className="grid grid-cols-12 gap-2 items-center">
+              {/* Year */}
+              <div className="col-span-5 relative flex items-center">
+                <input
+                  ref={yearInputRef}
+                  id="profile-birthdate-input"
+                  name="birthYear"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={birthYear}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 4);
+                    setBirthYear(val);
+                    if (val.length === 4) {
+                      monthInputRef.current?.focus();
+                    }
+                  }}
+                  placeholder="1996"
+                  maxLength={4}
+                  className="w-full bg-[#161625] border border-white/10 rounded-xl px-3 py-2.5 text-center text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/30 text-sm font-medium pr-7 transition-all"
+                  required
+                />
+                <span className="absolute right-2.5 text-xs text-slate-400 pointer-events-none font-medium">년</span>
+              </div>
+
+              {/* Month */}
+              <div className="col-span-3 relative flex items-center">
+                <input
+                  ref={monthInputRef}
+                  id="profile-birth-month"
+                  name="birthMonth"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={birthMonth}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 2);
+                    setBirthMonth(val);
+                    if (val.length === 2 || (val.length === 1 && parseInt(val, 10) >= 2)) {
+                      dayInputRef.current?.focus();
+                    }
+                  }}
+                  placeholder="05"
+                  maxLength={2}
+                  className="w-full bg-[#161625] border border-white/10 rounded-xl px-2 py-2.5 text-center text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/30 text-sm font-medium pr-6 transition-all"
+                  required
+                />
+                <span className="absolute right-2 text-xs text-slate-400 pointer-events-none font-medium">월</span>
+              </div>
+
+              {/* Day */}
+              <div className="col-span-4 relative flex items-center">
+                <input
+                  ref={dayInputRef}
+                  id="profile-birth-day"
+                  name="birthDay"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={birthDay}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 2);
+                    setBirthDay(val);
+                  }}
+                  placeholder="15"
+                  maxLength={2}
+                  className="w-full bg-[#161625] border border-white/10 rounded-xl px-2.5 py-2.5 text-center text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/30 text-sm font-medium pr-6 transition-all"
+                  required
+                />
+                <span className="absolute right-2 text-xs text-slate-400 pointer-events-none font-medium">일</span>
+              </div>
+            </div>
           </div>
 
           {/* Birth Time */}
